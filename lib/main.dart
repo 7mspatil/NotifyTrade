@@ -420,7 +420,7 @@ class _HomePageState extends State<HomePage> {
     ])),
     const SizedBox(height: 16),
     _safetyCard(),
-    ])),
+    ]))),
   ]);
 
   Widget _settingIcon(IconData icon) => Container(width: 42, height: 42, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(13)), child: Icon(icon, size: 20));
