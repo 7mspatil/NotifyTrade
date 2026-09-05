@@ -476,7 +476,7 @@ class _SparklinePainter extends CustomPainter {
       Offset(0, size.height * .72), Offset(size.width*.12, size.height*.58), Offset(size.width*.24, size.height*.64), Offset(size.width*.36, size.height*.40), Offset(size.width*.48, size.height*.47), Offset(size.width*.60, size.height*.25), Offset(size.width*.72, size.height*.36), Offset(size.width*.84, size.height*.18), Offset(size.width, size.height*.27),
     ];
     final path = Path()..moveTo(points.first.dx, points.first.dy);
-    for (var i=1; i<points.length; i++) path.lineTo(points[i].dx, points[i].dy);
+    for (var i=1; i<points.length; i++) { path.lineTo(points[i].dx, points[i].dy); }
     final area = Path.from(path)..lineTo(size.width, size.height)..lineTo(0, size.height)..close();
     canvas.drawPath(area, fill);
     canvas.drawPath(path, paint);
