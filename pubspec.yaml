@@ -1,0 +1,30 @@
+name: notifytrade_app
+description: NotifyTrade - simple, attractive cross-platform market signal demo for Android and iOS.
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.2
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/notifytrade_icon.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/notifytrade_icon.png
+  adaptive_icon_background: "#111827"
+  adaptive_icon_foreground: assets/notifytrade_icon.png
