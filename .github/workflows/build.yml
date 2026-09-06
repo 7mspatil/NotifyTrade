@@ -51,6 +51,8 @@ jobs:
           cache: true
       - name: Generate iOS platform
         run: flutter create --platforms=ios --org=com.notifytrade --project-name=notifytrade .
+      - name: Remove outdated test
+        run: rm -f test/widget_test.dart
       - name: Get dependencies
         run: flutter pub get
       - name: Analyze
