@@ -108,13 +108,41 @@ class AuthGate extends StatefulWidget {
   State<AuthGate> createState() => _AuthGateState();
 }
 
+class _DemoUser {
+  final String name;
+  final String mobile;
+
+  const _DemoUser(this.name, this.mobile);
+}
+
 class _AuthGateState extends State<AuthGate> {
+  static const String demoOtp = '123456';
+
+  // Demo users for testing. No SMS service is used yet.
+  final List<_DemoUser> users = [
+    const _DemoUser('Amit Sharma', '9876543210'),
+    const _DemoUser('Priya Patil', '9876543211'),
+    const _DemoUser('Rahul Verma', '9876543212'),
+    const _DemoUser('Sneha Joshi', '9876543213'),
+    const _DemoUser('Vikas Kumar', '9876543214'),
+    const _DemoUser('Neha Singh', '9876543215'),
+    const _DemoUser('Rohit Desai', '9876543216'),
+    const _DemoUser('Pooja Shah', '9876543217'),
+    const _DemoUser('Karan Mehta', '9876543218'),
+    const _DemoUser('Anjali Kulkarni', '9876543219'),
+    const _DemoUser('Suresh More', '9876543220'),
+    const _DemoUser('Kavita Rao', '9876543221'),
+    const _DemoUser('Nitin Gupta', '9876543222'),
+    const _DemoUser('Meera Iyer', '9876543223'),
+    const _DemoUser('Arjun Nair', '9876543224'),
+  ];
+
   AuthMode mode = AuthMode.login;
   bool otpStep = false;
   bool loading = false;
   String name = '';
   String mobile = '';
-  String otp = '';
+  String generatedOtp = demoOtp;
 
   final nameController = TextEditingController();
   final mobileController = TextEditingController();
@@ -129,33 +157,66 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _sendOtp() {
-    final phone = mobileController.text.trim();
-    if (phone.length < 10) {
+    final phone = mobileController.text.replaceAll(RegExp(r'\D'), '');
+
+    if (phone.length != 10) {
       _message('Enter a valid 10-digit mobile number.');
       return;
     }
-    if (mode == AuthMode.register && nameController.text.trim().isEmpty) {
-      _message('Please enter your name.');
+
+    final existing = users.where((u) => u.mobile == phone).firstOrNull;
+
+    if (mode == AuthMode.register) {
+      if (nameController.text.trim().isEmpty) {
+        _message('Please enter your name.');
+        return;
+      }
+      if (existing != null) {
+        _message('This mobile number is already registered. Please login.');
+        return;
+      }
+    } else if (existing == null) {
+      _message('Mobile number is not registered. Please register first.');
       return;
     }
 
     setState(() {
       mobile = phone;
-      name = nameController.text.trim();
+      name = mode == AuthMode.register
+          ? nameController.text.trim()
+          : existing!.name;
+      generatedOtp = demoOtp;
       otpStep = true;
       otpController.clear();
     });
+
+    _message('Demo OTP generated: $demoOtp');
   }
 
   void _verifyOtp() {
-    if (otpController.text.trim().length != 6) {
+    final enteredOtp = otpController.text.trim();
+
+    if (enteredOtp.length != 6) {
       _message('Enter the 6-digit OTP.');
       return;
     }
 
-    // Demo verification. Replace this with the real OTP API later.
+    if (enteredOtp != generatedOtp) {
+      _message('Invalid OTP. For testing, use $demoOtp.');
+      return;
+    }
+
+    if (mode == AuthMode.register) {
+      final alreadyExists = users.any((u) => u.mobile == mobile);
+      if (alreadyExists) {
+        _message('This mobile number is already registered.');
+        return;
+      }
+      users.add(_DemoUser(name, mobile));
+    }
+
     setState(() => loading = true);
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 350), () {
       if (!mounted) return;
       setState(() => loading = false);
       Navigator.of(context).pushReplacement(
@@ -170,6 +231,14 @@ class _AuthGateState extends State<AuthGate> {
     });
   }
 
+  void _resendOtp() {
+    setState(() {
+      generatedOtp = demoOtp;
+      otpController.clear();
+    });
+    _message('Demo OTP: $demoOtp');
+  }
+
   void _message(String text) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
@@ -180,7 +249,12 @@ class _AuthGateState extends State<AuthGate> {
     setState(() {
       mode = next;
       otpStep = false;
+      loading = false;
+      name = '';
+      mobile = '';
       otpController.clear();
+      nameController.clear();
+      mobileController.clear();
     });
   }
 
@@ -323,9 +397,10 @@ class _AuthGateState extends State<AuthGate> {
         const SizedBox(height: 20),
         SizedBox(
           height: 54,
-          child: FilledButton(
-            onPressed: _sendOtp,
-            child: Text(register ? 'Verify mobile number' : 'Continue'),
+          child: FilledButton.icon(
+            onPressed: loading ? null : _sendOtp,
+            icon: const Icon(Icons.sms_outlined),
+            label: Text(register ? 'Send OTP' : 'Send OTP & Login'),
           ),
         ),
         const SizedBox(height: 24),
@@ -344,6 +419,24 @@ class _AuthGateState extends State<AuthGate> {
               child: Text(register ? 'Login' : 'Register'),
             ),
           ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            'Demo mode: use one of the sample users or register a new user. OTP is $demoOtp.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
         ),
         const SizedBox(height: 10),
         Text(
@@ -369,7 +462,7 @@ class _AuthGateState extends State<AuthGate> {
         Row(
           children: [
             IconButton(
-              onPressed: () => setState(() => otpStep = false),
+              onPressed: loading ? null : () => setState(() => otpStep = false),
               icon: const Icon(Icons.arrow_back_rounded),
             ),
             const SizedBox(width: 4),
@@ -383,14 +476,38 @@ class _AuthGateState extends State<AuthGate> {
         Padding(
           padding: const EdgeInsets.only(left: 48),
           child: Text(
-            'Enter the 6-digit OTP sent to +91 $mobile',
+            'Enter the 6-digit OTP for +91 $mobile',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 14,
             ),
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 22),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.lock_open_rounded,
+                  color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Demo OTP: $generatedOtp',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
         TextField(
           controller: otpController,
           keyboardType: TextInputType.number,
@@ -426,14 +543,15 @@ class _AuthGateState extends State<AuthGate> {
           ),
         ),
         const SizedBox(height: 14),
-        TextButton(
-          onPressed: () => _message('A new OTP has been requested.'),
-          child: const Text('Resend OTP'),
+        TextButton.icon(
+          onPressed: loading ? null : _resendOtp,
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          label: const Text('Resend OTP'),
         ),
         const SizedBox(height: 14),
         Center(
           child: Text(
-            'For demo builds, any 6-digit OTP is accepted.',
+            'Demo testing only — no SMS is sent.',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 11,
