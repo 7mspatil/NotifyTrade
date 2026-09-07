@@ -1,0 +1,72 @@
+name: Build NotifyTrade Android + iOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.2'
+          cache: true
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Build release APK
+        run: flutter build apk --release
+      - name: Verify APK exists
+        run: test -f build/app/outputs/flutter-apk/app-release.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: notifytrade-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  ios:
+    name: Build iOS (unsigned)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.2'
+          cache: true
+      - name: Generate iOS platform
+        run: flutter create --platforms=ios --org=com.notifytrade --project-name=notifytrade .
+      - name: Remove outdated test
+        run: rm -f test/widget_test.dart
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Build unsigned iOS app
+        run: flutter build ios --release --no-codesign
+      - name: Package iOS app
+        run: |
+          mkdir -p ios-artifact
+          cp -R build/ios/iphoneos/Runner.app ios-artifact/NotifyTrade.app
+          cd ios-artifact
+          zip -r ../notifytrade-ios-unsigned.zip NotifyTrade.app
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notifytrade-ios-unsigned
+          path: notifytrade-ios-unsigned.zip
